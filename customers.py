@@ -128,7 +128,7 @@ class Customers():
         lons = np.concatenate((lons_out_orig,lons_in_orig,lons_out_dest,lons_in_dest,lons_dep))
 
         # uniformly distributed integer demands.
-        cust_demands_out = np.random.randint(min_demand, max_demand, n)
+        cust_demands_out = np.random.randint(min_demand, max_demand+1, n)
 
         # assume all trips out require a return trip with the same demand as the out trip
         cust_demands_in = np.copy(cust_demands_out)
@@ -402,3 +402,15 @@ class Customers():
         if  idx >= self.num_trips + self.num_custs:
             opposite_idx = idx - self.num_custs
         return opposite_idx
+
+    def get_node_name(self,idx):
+        return ("Pickup %d" % ( idx % self.num_custs )  if idx < self.num_custs else
+                "Return Pickup %d" % ( idx % self.num_custs ) if idx >= self.num_custs and idx < self.num_trips else
+                "Delivery %d" % ( idx % self.num_custs ) if idx >= self.num_trips and idx < (self.num_trips+self.num_custs) else
+                "Return Delivery %d" % ( idx % self.num_custs ) if idx < 2*self.num_trips else
+                "Depot %d" % (idx % 2*self.num_trips))
+
+    def get_node_label(self,idx):
+        return "{[%d] %s}" % (idx, self.get_node_name(idx))
+
+        

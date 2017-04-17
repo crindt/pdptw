@@ -33,7 +33,7 @@ def build_vehicle_route(routing, plan, customers, veh_number):
         return None
 
 
-def vehicle_output_string(routing, plan):
+def vehicle_output_string(routing, plan, customers, vehicles):
     """
     Return a string displaying the output of the routing instance and
     assignment (plan).
@@ -42,6 +42,10 @@ def vehicle_output_string(routing, plan):
         routing (ortools.constraint_solver.pywrapcp.RoutingModel): routing.
 
         plan (ortools.constraint_solver.pywrapcp.Assignment): the assignment.
+
+        customers: the Customers object
+
+        vehicles: the Vehicles object
     Returns:
         (string) plan_output: describing each vehicle's plan.
 
@@ -59,7 +63,8 @@ def vehicle_output_string(routing, plan):
 
     for route_number in range(routing.vehicles()):
         order = routing.Start(route_number)
-        plan_output += 'Route {0}:'.format(route_number)
+        veh = vehicles.vehicles[route_number]
+        plan_output += 'Route {0}: [cap: {1}, cost {2}]'.format(route_number,veh.capacity, veh.cost)
         if routing.IsEnd(plan.Value(routing.NextVar(order))):
             plan_output += ' Empty \n'
         else:
@@ -67,8 +72,8 @@ def vehicle_output_string(routing, plan):
                 load_var = capacity_dimension.CumulVar(order)
                 time_var = time_dimension.CumulVar(order)
                 plan_output += \
-                    " {order} Load({load}) Time({tmin}, {tmax}) -> ".format(
-                        order=order,
+                    "\n\t{order} Load({load}) Time({tmin}, {tmax}) -> ".format(
+                        order=customers.get_node_label(order),
                         load=plan.Value(load_var),
                         tmin=str(timedelta(seconds=plan.Min(time_var))),
                         tmax=str(timedelta(seconds=plan.Max(time_var))))
