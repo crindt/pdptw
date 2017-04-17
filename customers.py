@@ -120,7 +120,7 @@ class Customers():
         lons = np.concatenate((lons_out_orig,lons_out_dest,lons_in_orig,lons_in_dest,lons_dep))
 
         # uniformly distributed integer demands.
-        cust_demands_out = np.random.randint(min_demand, max_demand, n)
+        cust_demands_out = np.random.randint(min_demand, max_demand+1, n)
 
         # assume all trips out require a return trip with the same demand as the out trip
         cust_demands_in = np.copy(cust_demands_out)

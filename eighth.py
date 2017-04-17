@@ -229,6 +229,10 @@ def main():
                         help='Minimum time window')
     parser.add_argument('--max-tw', type=float, dest='max_tw',default=3,
                         help='Maximum time window')
+    parser.add_argument('--min-cap', type=float, dest='min_cap',default=1,
+                        help='Minimum vehicle capacity')
+    parser.add_argument('--max-cap', type=float, dest='max_cap',default=3,
+                        help='Maximum vehicle capacity')
     parser.add_argument('--box-size', type=float, dest='box_size',default=40,
                         help='Box size (km)')
     parser.add_argument('--load-time', type=int, dest='load_time',default=300,
@@ -281,7 +285,7 @@ def main():
     print('time callbacks done')
 
     # Create a list of inhomgeneous vehicle capacities as integer units.
-    capacity = np.random.random_integers(3, 9, num_vehicles)
+    capacity = np.random.random_integers(args.min_cap, args.max_cap, num_vehicles)
 
     # Create a list of inhomogenious fixed vehicle costs.
     cost = [int(100 + 2 * np.sqrt(c)) for c in capacity]
@@ -367,6 +371,7 @@ def main():
 
     time_dimension = routing.GetDimensionOrDie("Time")
     solver = routing.solver()
+    allvv = {}
     for cust in customers.customers:
         #
         # here is where I should add pick up and delivery constraints
@@ -386,7 +391,7 @@ def main():
             deliv_index = routing.NodeToIndex(deliv.index)
             # print ('adding same vehicle constraint')
             solver.AddConstraint(
-                routing.VehicleVar(cust_index) == routing.VehicleVar(deliv_index))
+                routing.VehicleVar(cust.index) == routing.VehicleVar(deliv.index))
 
             # print('adding less than, equal to constraint')
             solver.AddConstraint(
@@ -395,13 +400,28 @@ def main():
             routing.AddPickupAndDelivery(cust.index, deliv.index);
 
             # for all original pickups...
-            # if cust_index < n:
-            #     ret = customers.customers[cust_index+n]
-            #     ret_index = routing.NodeToIndex(ret.index)
-            #     # require that the return pickup to have the same active status
-            #     solver.AddConstraint(
-            #         routing.ActiveVar(cust_index) == routing.ActiveVar(ret_index)
-            #     )
+            if cust.index < n:
+                ret = customers.customers[cust.index+n]
+
+                # compute negatives
+                vvcp = solver.IntVar(0,args.v,'cstatcp%d'%cust.index)
+                allvv['cstatcp%d'%cust.index] = vvcp
+                vvcn = solver.IntVar(0,2,'cstatcn%d'%cust.index)
+                allvv['cstatcn%d'%cust.index] = vvcn
+                solver.AddConstraint(
+                    routing.VehicleVar(cust.index) == vvcp - vvcn
+                )
+                vvrp = solver.IntVar(0,args.v,'cstatrp%d'%ret.index)
+                allvv['cstatrp%d'%ret.index] = vvrp
+                vvrn = solver.IntVar(0,2,'cstatrn%d'%ret.index)
+                allvv['cstatrn%d'%ret.index] = vvrn
+                solver.AddConstraint(
+                    routing.VehicleVar(ret.index) == vvrp - vvrn
+                )
+
+                solver.AddConstraint(
+                    vvcn == vvrn
+                )
 
         # set the time window constraint for this stop (pickup or delivery)
         if cust.tw_open is not None:
@@ -435,6 +455,8 @@ def main():
     penalty = 400000000  # The cost for dropping a node from the plan.
     nodes = [routing.AddDisjunction([int(c)], penalty) for c in non_depot]
 
+
+
     # This is how you would implement partial routes if you already knew part
     # of a feasible solution for example:
     # partial = np.random.choice(list(non_depot), size=(4,5), replace=False)
@@ -464,6 +486,12 @@ def main():
         print(plan_output)
         print('dropped nodes: ' + ', '.join(dropped))
 
+        for i in range(4*n):
+            print 'VV',i,assignment.Value(routing.ActiveVar(i))
+
+        for n in allvv.keys():
+            print n,allvv[n].Value() if allvv[n].Bound() else 'Unbound'
+
         # you could print debug information like this:
         # print(routing.DebugOutputAssignment(assignment, 'Capacity'))
 
@@ -480,7 +508,7 @@ def main():
         ax.plot(clon, clat, 'k.')
         # plot the routes as arrows
         plot_vehicle_routes(vehicle_routes, ax, customers, vehicles)
-        fig.savefig("test.png",dpi=900)
+        fig.savefig("test.png",dpi=300)
     else:
         print('No assignment')
 
