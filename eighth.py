@@ -65,10 +65,10 @@ def main():
                         help='Minimum time window')
     parser.add_argument('--max-tw', type=float, dest='max_tw',default=3,
                         help='Maximum time window')
-    parser.add_argument('--min-cap', type=float, dest='min_cap',default=1,
-                        help='Minimum vehicle capacity')
-    parser.add_argument('--max-cap', type=float, dest='max_cap',default=3,
-                        help='Maximum vehicle capacity')
+    parser.add_argument('--min-cap', type=float, dest='min_cap',default=3,
+                        help='Minimum capacity')
+    parser.add_argument('--max-cap', type=float, dest='max_cap',default=9,
+                        help='Maximum capacity')
     parser.add_argument('--box-size', type=float, dest='box_size',default=40,
                         help='Box size (km)')
     parser.add_argument('--load-time', type=int, dest='load_time',default=300,
@@ -256,14 +256,7 @@ def main():
 
         # set the time window constraint for this stop (pickup or delivery)
         if cust.tw_open is not None:
-            print('index: '+str(cust.index)
-                  +" "
-                  +("Pickup" if cust.index < n else
-                    "Return Pickup" if cust.index >= n and cust.index < 2*n else
-                    "Delivery" if cust.index >= num_custs and cust.index < (num_custs+n) else
-                    "Return Delivery" if cust.index < 2*num_custs else
-                    "Depot")
-                  +" "+str(cust.index%n)
+            print('index: '+customers.get_node_label(cust.index)
                   + ' open: ' +str(cust.tw_open) +
                   (' ttime({fr}->{to}):{ttime}'.format(
                       fr=routing.NodeToIndex(cust.index),
@@ -311,7 +304,7 @@ def main():
             print('succesfully wrote assignment to file ' +
                   save_file_base + '_assignment.ass')
 
-        plan_output, dropped = vo.vehicle_output_string(routing, assignment)
+        plan_output, dropped = vo.vehicle_output_string(routing, assignment, customers, vehicles)
 
         print('The Objective Value is {0}'.format(assignment.ObjectiveValue()))
         print('The cumulative distance cost is {0}'.format(assignment.ObjectiveValue() - len(dropped)*penalty))
@@ -324,7 +317,7 @@ def main():
             pairedup = sorted([drop,other_end])
             matching_pair = [customers.get_index_of_opposite_trip(pairedup[0])
                              ,customers.get_index_of_opposite_trip(pairedup[1])]
-            print('index: '+str(drop)
+            print("\tindex: "+str(drop)
                   +" "
                   +"Paired "
                   +str(matching_pair[0]) +"->"+str(matching_pair[1])

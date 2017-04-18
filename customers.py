@@ -402,3 +402,15 @@ class Customers():
         if  idx >= self.num_trips + self.num_custs:
             opposite_idx = idx - self.num_custs
         return opposite_idx
+
+    def get_node_name(self,idx):
+        return ("Pickup %d" % ( idx % self.num_custs )  if idx < self.num_custs else
+                "Return Pickup %d" % ( idx % self.num_custs ) if idx >= self.num_custs and idx < self.num_trips else
+                "Delivery %d" % ( idx % self.num_custs ) if idx >= self.num_trips and idx < (self.num_trips+self.num_custs) else
+                "Return Delivery %d" % ( idx % self.num_custs ) if idx < 2*self.num_trips else
+                "Depot %d" % (idx % 2*self.num_trips))
+
+    def get_node_label(self,idx):
+        return "{[%d] %s}" % (idx, self.get_node_name(idx))
+
+        
